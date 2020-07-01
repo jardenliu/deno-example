@@ -232,7 +232,7 @@ deno run net_client.ts --allow-net
 
 --cached-only                只使用缓存
 --inspect=<HOST:PORT>        启动审查服务
---inspect-brk=<HOST:PORT>    让审查服务在调用这个服务端口时退出
+--inspect-brk=<HOST:PORT>    启动断点审查服务，会在程序第一行添点断点，等待审查工具接入
 --seed <NUMBER>              生成随机数
 --v8-flags=<v8-flags>         V8引擎命令行参数
 ```
@@ -272,5 +272,74 @@ const wasmCode = new Uint8Array([
 const wasmModule = new WebAssembly.Module(wasmCode);
 const wasmInstance = new WebAssembly.Instance(wasmModule);
 console.log(wasmInstance.exports.main().toString());
+```
+
+
+
+##### 生命周期
+
+Deno支持与浏览器兼容的生命周期事件：`load`和`unload`。您可以使用这些事件在对程序进行添加设置或清除代码等操作。
+
+`load`事件的监听器可以是异步的，将会被等待。`unload`事件的监听器是同步的。
+
+例：
+
+**main.ts**
+
+```ts
+import "./imported.ts";
+
+const handler = (e: Event): void => {
+  console.log(`got ${e.type} event in event handler (main)`);
+};
+
+window.addEventListener("load", handler);
+
+window.addEventListener("unload", handler);
+
+window.onload = (e: Event): void => {
+  console.log(`got ${e.type} event in onload function (main)`);
+};
+
+window.onunload = (e: Event): void => {
+  console.log(`got ${e.type} event in onunload function (main)`);
+};
+
+console.log("log from main script");
+```
+
+**imported.ts**
+
+```ts
+const handler = (e: Event): void => {
+  console.log(`got ${e.type} event in event handler (imported)`);
+};
+
+window.addEventListener("load", handler);
+window.addEventListener("unload", handler);
+
+window.onload = (e: Event): void => {
+  console.log(`got ${e.type} event in onload function (imported)`);
+};
+
+window.onunload = (e: Event): void => {
+  console.log(`got ${e.type} event in onunload function (imported)`);
+};
+
+console.log("log from imported script");
+```
+
+请注意，您可以同时使用`window.addEventListener`和 `window.onload`/ `window.onunload`来定义事件的处理程序。它们之间有一个主要区别，让我们运行示例：
+
+```bash
+$ deno run main.ts
+log from imported script
+log from main script
+got load event in onload function (main)
+got load event in event handler (imported)
+got load event in event handler (main)
+got unload event in onunload function (main)
+got unload event in event handler (imported)
+got unload event in event handler (main)
 ```
 
