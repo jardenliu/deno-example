@@ -343,3 +343,396 @@ got unload event in event handler (imported)
 got unload event in event handler (main)
 ```
 
+## 标准库
+
+Deno提供了一组由核心团队审核的标准模块，并保证可以与Deno一起使用。
+
+标准库位于：[https](https://deno.land/std/) : [//deno.land/std/](https://deno.land/std/)
+
+#### 版本控制
+
+标准库尚不稳定，因此版本与Deno不同。有关最新版本，请访问https://deno.land/std/或 https://deno.land/std/version.ts。每次发布Deno时都会发布标准库。
+
+强烈建议始终将导入与标准库的固定版本一起使用，以避免意外更改。例如，与其链接到主代码分支，该分支随时可能更改，可能会导致编译错误或意外行为：
+
+```typescript
+import { copy } from "https://deno.land/std/fs/copy.ts";
+```
+
+而是使用了不可变且不会更改的std库版本：
+
+```typescript
+import { copy } from "https://deno.land/std@0.50.0/fs/copy.ts";
+```
+
+## 第三方库
+
+Deno没有提供类似于npm的仓库，但是官方提供了一个基于github的URL映射服务。通过编辑Deno官网提供的[database.json来实现对模块代码脚本的URL重定向。使用时采用https://deno.land/x/MODULE_NAME@BRANCH_OR_TAG/SCRIPT.ts的URL格式。BRANCH默认为master。可以通过deno doc来获取对应脚本的文档。
+
+例：
+
+```ts
+import * as base64 from "https://deno.land/x/base64/mod.ts";
+```
+
+等同于：
+
+```ts
+import * as base64 from "https://raw.githubusercontent.com/chiefbiiko/base64/master/mod.ts";
+```
+
+
+
+## 单元测试
+
+为了帮助开发人员编写测试，Deno标准库带有一个内置的 [断言模块](https://deno.land/std/testing/asserts.ts)，可以从导入该[模块](https://deno.land/std/testing/asserts.ts)`https://deno.land/std/testing/asserts.ts`。
+
+```js
+import { assert } from "https://deno.land/std/testing/asserts.ts";
+
+
+Deno.test("Hello Test", () => {
+  assert("Hello");
+});
+```
+
+断言模块提供了九个断言：
+
+- `assert(expr: unknown, msg = ""): asserts expr ` //断言为真
+- `assertEquals(actual: unknown, expected: unknown, msg?: string): void` // 断言相等
+- `assertNotEquals(actual: unknown, expected: unknown, msg?: string): void` // 断言不相等
+- `assertStrictEquals(actual: unknown, expected: unknown, msg?: string): void` // 断言严格相等
+- `assertStringContains(actual: string, expected: string, msg?: string): void` // 断言字符串包含
+- `assertArrayContains(actual: unknown[], expected: unknown[], msg?: string): void` // 断言数组包含
+- `assertMatch(actual: string, expected: RegExp, msg?: string): void` // 断言正则匹配
+- `assertThrows(fn: () => void, ErrorClass?: Constructor, msgIncludes = "", msg?: string): Error` // 断言有错误抛出
+- `assertThrowsAsync(fn: () => Promise<void>, ErrorClass?: Constructor, msgIncludes = "", msg?: string): Promise<Error>` // 断言异步错误
+
+执行单元测试
+
+```js
+$ deno test --allow-read --allow-run https://deno.land/std/examples/test.ts
+```
+
+
+
+## Debugger
+
+Deno支持[V8检查器协议](https://v8.dev/docs/inspector)。
+
+可以使用Chrome Devtools或其他支持该协议的客户端（例如VSCode）来调试Deno程序。
+
+要激活调试功能，请使用`--inspect`或 `--inspect-brk`标志运行Deno 。
+
+该`--inspect`标志允许在任何时间点附加调试器，同时 `--inspect-brk`将等待调试器附加并暂停第一行代码的执行。
+
+
+
+让我们尝试使用Chrome Devtools调试程序。为此，我们将使用 来自静态文件服务器的[file_server.ts](https://deno.land/std@v0.50.0/http/file_server.ts)`std`。
+
+使用该`--inspect-brk`标志在第一行中断执行：
+
+```bash
+$ deno run --inspect-brk --allow-read --allow-net https://deno.land/std@v0.50.0/http/file_server.ts
+Debugger listening on ws://127.0.0.1:9229/ws/1e82c406-85a9-44ab-86b6-7341583480b1
+Download https://deno.land/std@v0.50.0/http/file_server.ts
+Compile https://deno.land/std@v0.50.0/http/file_server.ts
+...
+```
+
+使用谷歌浏览器打开`chrome://inspect`就可以进行debug了
+
+
+
+## 脚本安装
+
+Deno提供`deno install`了轻松安装和分发可执行代码的功能。
+
+`deno install [OPTIONS...] [URL] [SCRIPT_ARGS...]`将以`URL`的名称安装可用的脚本`EXE_NAME`。
+
+此命令创建一个精简的，可执行的Shell脚本，该脚本`deno`使用指定的CLI标志和主模块进行调用。它放置在安装根 `bin`目录下
+
+例：
+
+```bash
+$ deno install --allow-net --allow-read https://deno.land/std/http/file_server.ts
+[1/1] Compiling https://deno.land/std/http/file_server.ts
+
+✅ 在deno的环境目录下面会添加一个file_server的可执行文件
+$HOME/.deno/bin/file_server
+```
+
+要更改可执行文件的名称，请使用`-n`/ `--name`：
+
+```bash
+$ deno install --allow-net --allow-read -n fs https://deno.land/std/http/file_server.ts 
+```
+
+绑定参数：
+
+```bash
+$ deno install --allow-net --allow-read -n fs https://deno.land/std/http/file_server.ts -p 8080
+```
+
+其他options：
+
+```bash
+f, --force            强行安装，如果存在相同的脚本则覆盖
+-L, --log-level <log-level>    log的输出等级
+-n, --name <name>         执行文件的名字
+-q, --quiet            禁止诊断程序输出
+--root <root>         指定其他安装目录
+--unstable           使用不稳定的 APIs
+```
+
+
+
+## 格式化
+
+Deno附带有一个内置的代码格式化程序，可以自动格式化TypeScript和JavaScript代码。
+
+```bash
+# 格式化当前目录下的所有JS/TS文件
+deno fmt
+# 格式化特定的文件
+deno fmt myfile1.ts myfile2.ts
+# 检查是否被格式化
+deno fmt --check
+# 输出格式化后的文件内容
+cat file.ts | deno fmt -
+```
+
+通过在其前面加上`// deno-fmt-ignore`注释来忽略格式代码：
+
+```ts
+// deno-fmt-ignore
+export const identity = [
+    1, 0, 0,
+    0, 1, 0,
+    0, 0, 1,
+];
+```
+
+或通过`// deno-fmt-ignore-file`在文件顶部添加注释来忽略整个文件。
+
+
+
+## 打包
+
+`deno bundle [URL]`将输出一个JavaScript文件，其中包括指定输入的所有依赖项。例如：
+
+```null
+$ deno bundle https://deno.land/std/examples/colors.ts colors.bundle.js
+Bundling "colors.bundle.js"
+Emitting bundle to "colors.bundle.js"
+9.2 kB emitted.
+```
+
+如果您省略out文件，则打包文件则会在`stdout`输出。
+
+打包后的文件可以像Deno中的任何其他模块一样运行：
+
+```null
+deno run colors.bundle.js
+```
+
+## 文档生成
+
+`deno doc`随后是一个或多个源文件的列表，将为该模块的每个**导出**成员打印JSDoc文档。当前，仅支持`export <declaration>`和样式的导出`export ... from ...`。
+
+例如，给定一个`add.ts`包含以下内容的文件：
+
+```ts
+/**
+ * Adds x and y.
+ * @param {number} x
+ * @param {number} y
+ * @returns {number} Sum of x and y
+ */
+export function add(x: number, y: number): number {
+  return x + y;
+}
+```
+
+运行Deno `doc`命令，将函数的JSDoc注释打印到`stdout`：
+
+```bash
+deno doc add.ts
+function add(x: number, y: number): number
+  Adds x and y. @param {number} x @param {number} y @returns {number} Sum of x and y
+```
+
+使用该`--json`标志以JSON格式输出文档。JSON [文档](https://github.com/denoland/doc_website)格式由 [deno doc网站](https://github.com/denoland/doc_website)使用，并用于生成模块文档。
+
+
+
+## 依赖检查
+
+`deno info [URL]` 将检查ES模块及其所有依赖项。
+
+```bash
+deno info https://deno.land/std@0.52.0/http/file_server.ts
+Download https://deno.land/std@0.52.0/http/file_server.ts
+...
+local: /Users/deno/Library/Caches/deno/deps/https/deno.land/5bd138988e9d20db1a436666628ffb3f7586934e0a2a9fe2a7b7bf4fb7f70b98
+type: TypeScript
+compiled: /Users/deno/Library/Caches/deno/gen/https/deno.land/std@0.52.0/http/file_server.ts.js
+map: /Users/deno/Library/Caches/deno/gen/https/deno.land/std@0.52.0/http/file_server.ts.js.map
+deps:
+https://deno.land/std@0.52.0/http/file_server.ts
+  ├─┬ https://deno.land/std@0.52.0/path/mod.ts
+  │ ├─┬ https://deno.land/std@0.52.0/path/win32.ts
+  │ │ ├── https://deno.land/std@0.52.0/path/_constants.ts
+  │ │ ├─┬ https://deno.land/std@0.52.0/path/_util.ts
+  │ │ │ └── https://deno.land/std@0.52.0/path/_constants.ts
+  │ │ └─┬ https://deno.land/std@0.52.0/testing/asserts.ts
+  │ │   ├── https://deno.land/std@0.52.0/fmt/colors.ts
+  │ │   └── https://deno.land/std@0.52.0/testing/diff.ts
+  │ ├─┬ https://deno.land/std@0.52.0/path/posix.ts
+  │ │ ├── https://deno.land/std@0.52.0/path/_constants.ts
+  │ │ └── https://deno.land/std@0.52.0/path/_util.ts
+  │ ├─┬ https://deno.land/std@0.52.0/path/common.ts
+  │ │ └── https://deno.land/std@0.52.0/path/separator.ts
+  │ ├── https://deno.land/std@0.52.0/path/separator.ts
+  │ ├── https://deno.land/std@0.52.0/path/interface.ts
+  │ └─┬ https://deno.land/std@0.52.0/path/glob.ts
+  │   ├── https://deno.land/std@0.52.0/path/separator.ts
+  │   ├── https://deno.land/std@0.52.0/path/_globrex.ts
+  │   ├── https://deno.land/std@0.52.0/path/mod.ts
+  │   └── https://deno.land/std@0.52.0/testing/asserts.ts
+  ├─┬ https://deno.land/std@0.52.0/http/server.ts
+  │ ├── https://deno.land/std@0.52.0/encoding/utf8.ts
+  │ ├─┬ https://deno.land/std@0.52.0/io/bufio.ts
+  │ │ ├─┬ https://deno.land/std@0.52.0/io/util.ts
+  │ │ │ ├── https://deno.land/std@0.52.0/path/mod.ts
+  │ │ │ └── https://deno.land/std@0.52.0/encoding/utf8.ts
+  │ │ └── https://deno.land/std@0.52.0/testing/asserts.ts
+  │ ├── https://deno.land/std@0.52.0/testing/asserts.ts
+  │ ├─┬ https://deno.land/std@0.52.0/async/mod.ts
+  │ │ ├── https://deno.land/std@0.52.0/async/deferred.ts
+  │ │ ├── https://deno.land/std@0.52.0/async/delay.ts
+  │ │ └─┬ https://deno.land/std@0.52.0/async/mux_async_iterator.ts
+  │ │   └── https://deno.land/std@0.52.0/async/deferred.ts
+  │ └─┬ https://deno.land/std@0.52.0/http/_io.ts
+  │   ├── https://deno.land/std@0.52.0/io/bufio.ts
+  │   ├─┬ https://deno.land/std@0.52.0/textproto/mod.ts
+  │   │ ├── https://deno.land/std@0.52.0/io/util.ts
+  │   │ ├─┬ https://deno.land/std@0.52.0/bytes/mod.ts
+  │   │ │ └── https://deno.land/std@0.52.0/io/util.ts
+  │   │ └── https://deno.land/std@0.52.0/encoding/utf8.ts
+  │   ├── https://deno.land/std@0.52.0/testing/asserts.ts
+  │   ├── https://deno.land/std@0.52.0/encoding/utf8.ts
+  │   ├── https://deno.land/std@0.52.0/http/server.ts
+  │   └── https://deno.land/std@0.52.0/http/http_status.ts
+  ├─┬ https://deno.land/std@0.52.0/flags/mod.ts
+  │ └── https://deno.land/std@0.52.0/testing/asserts.ts
+  └── https://deno.land/std@0.52.0/testing/asserts.ts
+```
+
+依赖检查器可与任何本地或远程ES模块一起使用。
+
+#### 缓存位置
+
+`deno info` 可用于显示有关缓存位置的信息：
+
+```bash
+deno info
+DENO_DIR location: "/Users/deno/Library/Caches/deno"
+Remote modules cache: "/Users/deno/Library/Caches/deno/deps"
+TypeScript compiler cache: "/Users/deno/Library/Caches/deno/gen"
+```
+
+
+
+## 代码检测
+
+Deno随附了用于JavaScript和TypeScript的内置代码linter。
+
+**注意：linter是一个新功能，仍然不稳定，因此需要`--unstable` 标志**
+
+```bash
+# 检查当前目录和子目录的TS/JS文件
+deno lint --unstable
+# 检测指定文件
+deno lint --unstable myfile1.ts myfile2.ts
+```
+
+可用规则
+
+- `ban-ts-comment`
+- `ban-untagged-ignore`
+- `constructor-super`
+- `for-direction`
+- `getter-return`
+- `no-array-constructor`
+- `no-async-promise-executor`
+- `no-case-declarations`
+- `no-class-assign`
+- `no-compare-neg-zero`
+- `no-cond-assign`
+- `no-debugger`
+- `no-delete-var`
+- `no-dupe-args`
+- `no-dupe-keys`
+- `no-duplicate-case`
+- `no-empty-character-class`
+- `no-empty-interface`
+- `no-empty-pattern`
+- `no-empty`
+- `no-ex-assign`
+- `no-explicit-any`
+- `no-func-assign`
+- `no-misused-new`
+- `no-namespace`
+- `no-new-symbol`
+- `no-obj-call`
+- `no-octal`
+- `no-prototype-builtins`
+- `no-regex-spaces`
+- `no-setter-return`
+- `no-this-alias`
+- `no-this-before-super`
+- `no-unsafe-finally`
+- `no-unsafe-negation`
+- `no-with`
+- `prefer-as-const`
+- `prefer-namespace-keyword`
+- `require-yield`
+- `triple-slash-reference`
+- `use-isnan`
+- `valid-typeof`
+
+忽略指令：
+
+要忽略整个文件，`// deno-lint-ignore-file`指令应放在文件顶部。
+
+```ts
+// deno-lint-ignore-file
+
+
+function foo(): any {
+  // ...
+}
+```
+
+必须将忽略指令放在第一个语句或声明之前：
+
+```ts
+// Copyright 2020 the Deno authors. All rights reserved. MIT license.
+
+
+/**
+ * Some JS doc
+ **/
+
+
+// deno-lint-ignore-file
+import { bar } from "./bar.js";
+
+function foo(): any {
+  // ...
+}
+```
+
+
+
