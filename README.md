@@ -11,7 +11,7 @@
 + 没有坚持使用Promise
 + 没有注重安全性
 + 没有从GYP构建系统转到GN
-+ 继续使用GYP，没有提供FFI
++ 继续使用GYP，没有提供FFI forgin funcion interface
 + package.json以及依赖了npm
 + 在任何地方都可以require(”somemodule“)
 + package.json 提供了错误的module概念
@@ -455,7 +455,7 @@ Deno提供`deno install`了轻松安装和分发可执行代码的功能。
 例：
 
 ```bash
-$ deno install --allow-net --allow-read https://deno.land/std/http/file_server.ts
+  $ deno install --allow-net --allow-read https://deno.land/std/http/file_server.ts
 [1/1] Compiling https://deno.land/std/http/file_server.ts
 
 ✅ 在deno的环境目录下面会添加一个file_server的可执行文件
@@ -477,7 +477,7 @@ $ deno install --allow-net --allow-read -n fs https://deno.land/std/http/file_se
 其他options：
 
 ```bash
-f, --force            强行安装，如果存在相同的脚本则覆盖
+-f, --force            强行安装，如果存在相同的脚本则覆盖
 -L, --log-level <log-level>    log的输出等级
 -n, --name <name>         执行文件的名字
 -q, --quiet            禁止诊断程序输出
